@@ -280,6 +280,10 @@ class GapDetectionModule(QDialog):
             QMessageBox.warning(self, "警告", "请提供完整的训练数据及输出目录！")
             return
 
+        if os.path.isfile(self.tr_out.text()):
+            QMessageBox.warning(self, "警告", f"模型输出路径 '{self.tr_out.text()}' 是一个文件，而非目录。\n请选择或新建一个文件夹作为输出目录！")
+            return
+
         try:
             print("开始训练（单次训练模式）...")
             # 注意：训练可能耗时较长，会导致 GUI 假死。生产环境中建议用 QThread 包装，这里直接调用

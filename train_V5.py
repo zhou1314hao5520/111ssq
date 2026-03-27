@@ -162,6 +162,8 @@ def main_train(
 
     # 单次训练模式: 所有产物直接输出到指定目录
     exp_dir = output_dir
+    if os.path.isfile(exp_dir):
+        raise ValueError(f"输出路径 '{exp_dir}' 是一个文件，而非目录。请选择或新建一个文件夹作为输出目录。")
     os.makedirs(exp_dir, exist_ok=True)
     
     print(f"\n{'='*50}")
