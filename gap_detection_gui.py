@@ -143,7 +143,7 @@ class GapDetectionModule(QDialog):
 
         self.tr_img_layout, self.tr_img = self.create_file_picker("训练图像目录:", is_dir=True)
         self.tr_mask_layout, self.tr_mask = self.create_file_picker("训练掩膜目录:", is_dir=True)
-        self.tr_out_layout, self.tr_out = self.create_file_picker("模型输出目录:", is_dir=True)
+        self.tr_out_layout, self.tr_out = self.create_file_picker("最佳模型保存路径 (.pth):", is_save=True)
 
         layout.addLayout(self.tr_img_layout)
         layout.addLayout(self.tr_mask_layout)
@@ -277,7 +277,11 @@ class GapDetectionModule(QDialog):
 
     def run_training(self):
         if not self.tr_img.text() or not self.tr_mask.text() or not self.tr_out.text():
-            QMessageBox.warning(self, "警告", "请提供完整的训练数据及输出目录！")
+            QMessageBox.warning(self, "警告", "请提供完整的训练数据路径及最佳模型保存路径！")
+            return
+
+        if not self.tr_out.text().endswith(".pth"):
+            QMessageBox.warning(self, "警告", "最佳模型保存路径必须以 .pth 结尾，例如: D:/output/best_model.pth")
             return
 
         try:
@@ -286,7 +290,7 @@ class GapDetectionModule(QDialog):
             train_V5.main_train(
                 img_dir=self.tr_img.text(),
                 mask_dir=self.tr_mask.text(),
-                output_dir=self.tr_out.text(),
+                model_save_path=self.tr_out.text(),
                 epochs=self.tr_epochs.value(),
                 batch_size=self.tr_batch.value(),
                 lr=self.tr_lr.value()

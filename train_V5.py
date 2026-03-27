@@ -148,29 +148,36 @@ def save_gap_plots(areas, ratios, output_dir, epoch):
 # 核心训练控制函数 (供外部或 GUI 调用)
 # =========================
 def main_train(
-    img_dir, 
-    mask_dir, 
-    output_dir, 
-    epochs=60, 
-    batch_size=8, 
+    img_dir,
+    mask_dir,
+    model_save_path,
+    epochs=60,
+    batch_size=8,
     lr=2e-4
 ):
     """
     启动模型训练流程。
+    model_save_path: 最佳模型的保存路径，必须以 .pth 结尾，例如 D:/output/best_model.pth
+    所有其他训练产物（断点、TensorBoard 日志、可视化图等）保存在同一目录下。
     """
     seed_everything(42)
 
-    # 单次训练模式: 所有产物直接输出到指定目录
-    exp_dir = output_dir
+    if not model_save_path.endswith(".pth"):
+        raise ValueError(f"模型保存路径 '{model_save_path}' 必须以 .pth 结尾，例如: D:/output/best_model.pth")
+
+    # 以模型文件所在目录作为所有训练产物的工作目录
+    exp_dir = os.path.dirname(os.path.abspath(model_save_path))
     os.makedirs(exp_dir, exist_ok=True)
-    
+
     print(f"\n{'='*50}")
     print("🚀 启动训练任务 | 单次训练模式")
     print(f"📁 图像目录: {img_dir}")
+    print(f"💾 最佳模型将保存至: {model_save_path}")
     print(f"⚙️ 参数: Epochs={epochs}, BatchSize={batch_size}, LR={lr}")
     print(f"{'='*50}\n")
 
     writer = SummaryWriter(os.path.join(exp_dir, "tensorboard"))
+    # 断点续训检查点（与最佳模型文件放在同一目录下）
     model_path = os.path.join(exp_dir, "model_checkpoint.pth")
 
     imgs = sorted(glob.glob(os.path.join(img_dir, "*.png")))
@@ -286,7 +293,7 @@ def main_train(
 
         print(f"\n[Epoch {epoch+1}/{epochs} 总结] Train Loss: {train_loss:.4f} | Val Loss: {val_loss:.4f} | Avg Gap Ratio: {np.mean(ratios):.4f}")
 
-        # 保存最优模型
+        # 保存最优模型（直接写入用户指定的 .pth 文件）
         if val_loss < best_loss:
             best_loss = val_loss
             torch.save({
@@ -294,8 +301,8 @@ def main_train(
                 "model": model.state_dict(),
                 "optimizer": optimizer.state_dict(),
                 "best_loss": best_loss
-            }, os.path.join(exp_dir, "best_model.pth"))
-            print("🌟 发现更优模型，已保存至 best_model.pth")
+            }, model_save_path)
+            print(f"🌟 发现更优模型，已保存至 {model_save_path}")
 
         # 实时覆盖保存最新模型
         torch.save({
@@ -309,7 +316,7 @@ def main_train(
         save_gap_plots(areas_all, ratio_history, exp_dir, epoch)
 
     writer.close()
-    print(f"\n🎉 训练全部完成！\n结果存放于: {exp_dir}")
+    print(f"\n🎉 训练全部完成！\n最佳模型已保存至: {model_save_path}\n其他产物存放于: {exp_dir}")
 
 # =========================
 # 本地测试入口
@@ -318,12 +325,12 @@ if __name__ == "__main__":
     # 在这里填写你的本地测试路径
     test_img_dir = r"K:\ssq\data\Tiantongshan_datasets_3\images"
     test_mask_dir = r"K:\ssq\data\Tiantongshan_datasets_3\masks"
-    test_output_dir = r"K:\ssq\data\train_output"
+    test_model_save_path = r"K:\ssq\data\train_output\best_model.pth"
 
     main_train(
         img_dir=test_img_dir,
         mask_dir=test_mask_dir,
-        output_dir=test_output_dir,
+        model_save_path=test_model_save_path,
         epochs=2,         # 测试时设小一点
         batch_size=4,
         lr=2e-4
